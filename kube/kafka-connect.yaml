@@ -1,0 +1,46 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: kafka-connect-cluster
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  image: ashishizofficial/strimzi-kafka-mongodb-connect
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9092
+  config:
+    group.id: connect-cluster
+    offset.storage.topic: strimzi-connect-cluster-offsets
+    config.storage.topic: strimzi-connect-cluster-configs
+    status.storage.topic: strimzi-connect-cluster-status
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: mongodb-source-connector
+  labels:
+    strimzi.io/cluster: kafka-connect-cluster
+spec:
+  class: com.mongodb.kafka.connect.MongoSourceConnector
+  tasksMax: 2
+  config:
+    connection.uri: mongodb://root:password@mongo.mongo.svc.cluster.local:27017
+    topic.prefix: mongo
+    database: my_database
+    collection: my_collection
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: mongodb-sink-connector
+  labels:
+    strimzi.io/cluster: kafka-connect-cluster
+spec:
+  class: com.mongodb.kafka.connect.MongoSinkConnector
+  tasksMax: 2
+  config:
+    topics: mongo
+    connection.uri: mongodb://root:password@mongo.mongo.svc.cluster.local:27017
+    database: my_database
+    collection: my_collection
+---
